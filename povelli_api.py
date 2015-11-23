@@ -3,6 +3,14 @@ from urlparse import urlparse
 from datetime import datetime
 from time import mktime
 
+API_DOMAIN = "dev.povelli.com"
+API_URL_PRODUCTS_UPDATE = "/e/backoffice/products/update"
+API_URL_PRODUCTS_DELETE = "/e/backoffice/products/delete"
+API_URL_PRODUCTS_GET    = "/e/backoffice/products/status"
+API_URL_LABELS_GET      = "/e/backoffice/labels/status"
+API_URL_LABELS_ASSIGN   = "/e/backoffice/labels/assign"
+API_URL_LABELS_UNASSIGN = "/e/backoffice/labels/unassign"
+
 JSON_HEADERS = {'Accept': 'application/json', 'Content-type': 'application/json'}
 SSL_VERIFY = True
 
@@ -59,13 +67,21 @@ class HTTPSignatureAuth(requests.auth.AuthBase):
 
         return request
 
-
-def post_data(api_server_domain, url_path, public_key, private_key, data=[]):
+def _post_data(api_server_domain, url_path, public_key, private_key, data=[], method="POST"):
     url = 'https://%s%s'%(api_server_domain, url_path)
-    auth = HTTPSignatureAuth(public_key, private_key, 'POST', url_path)
+    auth = HTTPSignatureAuth(public_key, private_key, method, url_path)
     json_data = json.dumps(data)
 
-    response = requests.post(url, auth=auth, data=json_data, headers=JSON_HEADERS, verify=SSL_VERIFY)
+    if method.upper() == "POST":
+        method_func = requests.post
+    elif method.upper() == "DELETE":
+        method_func = requests.delete
+    elif method.upper() == "GET":
+        method_func = requests.get
+    else:
+        raise Exception ("Invalid method!")
+        
+    response = method_func(url, auth=auth, data=json_data, headers=JSON_HEADERS, verify=SSL_VERIFY)
     status_code = response.status_code
 
     if status_code == 200:
@@ -73,8 +89,25 @@ def post_data(api_server_domain, url_path, public_key, private_key, data=[]):
         success = response_content.get('success', False)
 
     else:
-        success = False
-        response_content = {}
+        raise Exception ("Unauthorized! [%s]" % status_code)
 
     return success, response_content
 
+def send_product_updates(public_key, private_key, products):
+    return _post_data(API_DOMAIN, API_URL_PRODUCTS_UPDATE, public_key, private_key, products, "POST")
+    
+def delete_products(public_key, private_key, products):
+    return _post_data(API_DOMAIN, API_URL_PRODUCTS_DELETE, public_key, private_key, products, "DELETE")
+    
+def get_products(public_key, private_key, products):
+    return _post_data(API_DOMAIN, API_URL_PRODUCTS_GET, public_key, private_key, products, "POST")
+
+def get_labels(public_key, private_key, labels):
+    return _post_data(API_DOMAIN, API_URL_LABELS_GET, public_key, private_key, labels, "POST")
+
+def assign_labels(public_key, private_key, label_assignments):
+    return _post_data(API_DOMAIN, API_URL_LABELS_ASSIGN, public_key, private_key, label_assignments, "POST")
+
+def unassign_labels(public_key, private_key, labels):
+    return _post_data(API_DOMAIN, API_URL_LABELS_UNASSIGN, public_key, private_key, labels, "POST")
+    
