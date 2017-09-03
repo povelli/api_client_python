@@ -3,7 +3,8 @@ from urlparse import urlparse
 from datetime import datetime
 from time import mktime
 
-API_DOMAIN = "dev.povelli.com"
+API_DOMAIN = "api.povelli.com"
+API_PROTOCOL = "https"
 API_URL_PRODUCTS_UPDATE = "/e/backoffice/products/update"
 API_URL_PRODUCTS_DELETE = "/e/backoffice/products/delete"
 API_URL_PRODUCTS_GET    = "/e/backoffice/products/status"
@@ -68,7 +69,7 @@ class HTTPSignatureAuth(requests.auth.AuthBase):
         return request
 
 def _post_data(api_server_domain, url_path, public_key, private_key, data=[], method="POST"):
-    url = 'https://%s%s'%(api_server_domain, url_path)
+    url = '%s://%s%s'%(API_PROTOCOL, api_server_domain, url_path)
     auth = HTTPSignatureAuth(public_key, private_key, method, url_path)
     json_data = json.dumps(data)
 
